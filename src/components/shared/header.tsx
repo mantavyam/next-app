@@ -9,14 +9,14 @@ export function Header() {
       <div className="container flex h-14 items-center justify-between">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold">Text to Handwriting</span>
+            <span className="font-bold">Human Handwriting</span>
           </Link>
         </div>
         <div className="flex items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
             <Button variant="ghost" size="icon" asChild>
               <Link
-                href="https://github.com/codeium/human-handwriting"
+                href="https://github.com/mantavyam/human-handwriting"
                 target="_blank"
                 rel="noreferrer"
               >

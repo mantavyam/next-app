@@ -8,16 +8,16 @@ export function Footer() {
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
             Built by{" "}
             <Link
-              href="https://codeium.com"
+              href="https://linkedin.com/in/mantavyam"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"
             >
-              Codeium
+              Mantavyam
             </Link>
-            . The source code is available on{" "}
+            . Follow on{" "}
             <Link
-              href="https://github.com/codeium/human-handwriting"
+              href="https://github.com/mantavyam/human-handwriting"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"

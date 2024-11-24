@@ -1,4 +1,4 @@
-import { Metadata } from "next"
+import { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import { Toaster } from "sonner"
 import { Header } from "@/components/shared/header"
@@ -8,13 +8,18 @@ import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#000000',
+}
+
 export const metadata: Metadata = {
   title: 'Text to Handwriting',
   description: 'Convert text to handwriting-style images with various customization options.',
   keywords: 'text to handwriting, handwriting converter, digital handwriting',
   manifest: '/manifest.json',
-  themeColor: '#000000',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -35,9 +40,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <meta name="description" content="Convert text to handwriting" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="darkreader-lock" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
       </head>

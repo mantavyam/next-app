@@ -14,4 +14,9 @@ export interface HandwritingSettings {
   paperLines: boolean
   inkColor: string
   currentFont: Font
+  lineColor?: string
+  lineOpacity?: number
+  lineWidth?: number
+  lineSpacing?: number
+  marginColor?: string
 }

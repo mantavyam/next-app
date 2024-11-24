@@ -31,6 +31,11 @@ export const handwritingSettingsSchema = z.object({
   paperLines: z.boolean(),
   inkColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Invalid color format"),
   currentFont: fontSchema,
+  lineColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Invalid color format").optional(),
+  lineOpacity: z.number().min(0).max(100).optional(),
+  lineWidth: z.number().min(0.5).max(3).optional(),
+  lineSpacing: z.number().min(16).max(48).optional(),
+  marginColor: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Invalid color format").optional(),
 })
 
 export const textInputSchema = z.object({

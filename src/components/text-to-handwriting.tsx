@@ -1,12 +1,9 @@
 "use client"
 
 import { useState } from 'react'
-import { TextInput } from './editor/text-input'
-import { CanvasOutput } from './editor/canvas-output'
 import { DrawingPanel } from './editor/drawing-panel'
 import { CustomizationPanel } from './customization/customization-panel'
-import { Header } from './shared/header'
-import { Footer } from './shared/footer'
+import { InteractivePaper } from './editor/interactive-paper'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Type, PenTool } from "lucide-react"
 import type { HandwritingSettings } from '@/types'
@@ -35,15 +32,15 @@ export function TextToHandwriting() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
-          <div className="space-y-8">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-12 gap-6">
+          {/* Main Paper Panel - 9 columns */}
+          <div className="col-span-9">
             <Tabs defaultValue="text" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="text" className="flex items-center gap-2">
                   <Type className="h-4 w-4" />
-                  Text Input
+                  Write Text
                 </TabsTrigger>
                 <TabsTrigger value="draw" className="flex items-center gap-2">
                   <PenTool className="h-4 w-4" />
@@ -51,17 +48,8 @@ export function TextToHandwriting() {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="text" className="space-y-8">
-                <div className="rounded-lg border bg-card text-card-foreground shadow">
-                  <div className="p-6">
-                    <h2 className="text-lg font-semibold mb-4">Input Text</h2>
-                    <TextInput value={text} onChange={setText} />
-                  </div>
-                </div>
-                <div className="rounded-lg border bg-card text-card-foreground shadow">
-                  <div className="p-6">
-                    <h2 className="text-lg font-semibold mb-4">Preview</h2>
-                    <CanvasOutput text={text} settings={settings} />
-                  </div>
+                <div className="rounded-lg border bg-card text-card-foreground shadow p-6">
+                  <InteractivePaper settings={settings} onChange={setText} />
                 </div>
               </TabsContent>
               <TabsContent value="draw">
@@ -69,12 +57,13 @@ export function TextToHandwriting() {
               </TabsContent>
             </Tabs>
           </div>
-          <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+
+          {/* Customization Panel - 3 columns */}
+          <div className="col-span-3">
             <CustomizationPanel settings={settings} onSettingsChange={setSettings} />
           </div>
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
   )
 }

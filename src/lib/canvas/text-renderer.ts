@@ -7,10 +7,19 @@ interface TextMeasurements {
   lines: string[]
 }
 
+interface RenderOptions extends HandwritingSettings {
+  maxWidth?: number
+  startX?: number
+  startY?: number
+  paperWidth?: number
+  paperHeight?: number
+  handleNewLine?: (x: number, y: number) => { x: number; y: number }
+}
+
 export function measureText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  settings: HandwritingSettings
+  options: RenderOptions
 ): TextMeasurements {
   const {
     fontSize,
@@ -18,58 +27,105 @@ export function measureText(
     letterSpacing,
     wordSpacing,
     currentFont,
-    topPadding,
-    paperMargins,
-  } = settings
+    maxWidth = ctx.canvas.width - 80,
+  } = options
 
   // Set font and text properties
   ctx.font = `${fontSize}px "${currentFont.name}"`
   ctx.textBaseline = "top"
 
-  // Split text into words and calculate word widths
-  const words = text.split(/\s+/)
-  const wordWidths = words.map((word) => {
-    const letters = Array.from(word)
-    return letters.reduce((width, letter, index) => {
-      const letterWidth = ctx.measureText(letter).width
-      return width + letterWidth + (index < letters.length - 1 ? letterSpacing : 0)
-    }, 0)
-  })
-
-  // Calculate line breaks
+  // Split text into lines first (handle manual line breaks)
+  const textLines = text.split(/\\r?\\n/)
   const lines: string[] = []
-  let currentLine: string[] = []
-  let currentWidth = 0
-  const maxWidth = ctx.canvas.width - (paperMargins ? 80 : 20)
+  let totalHeight = 0
+  let maxLineWidth = 0
 
-  words.forEach((word, index) => {
-    const wordWidth = wordWidths[index]
-    const spaceWidth = wordSpacing
+  textLines.forEach(textLine => {
+    // Split line into words and calculate word widths
+    const words = textLine.split(/\\s+/).filter(word => word.length > 0)
+    const wordWidths = words.map((word) => {
+      const letters = Array.from(word)
+      return letters.reduce((width, letter, index) => {
+        const letterWidth = ctx.measureText(letter).width
+        return width + letterWidth + (index < letters.length - 1 ? letterSpacing : 0)
+      }, 0)
+    })
 
-    if (currentWidth + wordWidth + (currentLine.length > 0 ? spaceWidth : 0) <= maxWidth) {
-      currentLine.push(word)
-      currentWidth += wordWidth + (currentLine.length > 1 ? spaceWidth : 0)
-    } else {
-      if (currentLine.length > 0) {
-        lines.push(currentLine.join(" "))
+    // Calculate line breaks within each text line
+    let currentLine: string[] = []
+    let currentWidth = 0
+
+    words.forEach((word, index) => {
+      const wordWidth = wordWidths[index]
+      const spaceWidth = wordSpacing
+
+      // Check if word fits in current line
+      if (currentWidth + wordWidth + (currentLine.length > 0 ? spaceWidth : 0) <= maxWidth) {
+        currentLine.push(word)
+        currentWidth += wordWidth + (currentLine.length > 1 ? spaceWidth : 0)
+      } else {
+        // If word is too long, split it
+        if (wordWidth > maxWidth) {
+          // If we have a current line, add it first
+          if (currentLine.length > 0) {
+            lines.push(currentLine.join(" "))
+            totalHeight += lineHeight
+            maxLineWidth = Math.max(maxLineWidth, currentWidth)
+            currentLine = []
+            currentWidth = 0
+          }
+
+          // Split long word into characters
+          let currentPart: string[] = []
+          let partWidth = 0
+          Array.from(word).forEach((char) => {
+            const charWidth = ctx.measureText(char).width + letterSpacing
+            if (partWidth + charWidth <= maxWidth) {
+              currentPart.push(char)
+              partWidth += charWidth
+            } else {
+              lines.push(currentPart.join(""))
+              totalHeight += lineHeight
+              maxLineWidth = Math.max(maxLineWidth, partWidth)
+              currentPart = [char]
+              partWidth = charWidth
+            }
+          })
+          if (currentPart.length > 0) {
+            currentLine = [currentPart.join("")]
+            currentWidth = partWidth
+          }
+        } else {
+          // Normal word wrapping
+          if (currentLine.length > 0) {
+            lines.push(currentLine.join(" "))
+            totalHeight += lineHeight
+            maxLineWidth = Math.max(maxLineWidth, currentWidth)
+          }
+          currentLine = [word]
+          currentWidth = wordWidth
+        }
       }
-      currentLine = [word]
-      currentWidth = wordWidth
+    })
+
+    // Add remaining line if any
+    if (currentLine.length > 0) {
+      lines.push(currentLine.join(" "))
+      totalHeight += lineHeight
+      maxLineWidth = Math.max(maxLineWidth, currentWidth)
+    }
+
+    // Add an empty line for manual line breaks
+    if (textLine === "") {
+      lines.push("")
+      totalHeight += lineHeight
     }
   })
 
-  if (currentLine.length > 0) {
-    lines.push(currentLine.join(" "))
-  }
-
-  // Calculate total height
-  const actualLineHeight = lineHeight || fontSize * 1.2
-  const totalHeight = lines.length * actualLineHeight + topPadding
-
   return {
-    width: maxWidth,
+    width: maxLineWidth,
     height: totalHeight,
-    lineHeight: actualLineHeight,
+    lineHeight,
     lines,
   }
 }
@@ -77,47 +133,60 @@ export function measureText(
 export function renderText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  settings: HandwritingSettings
+  options: RenderOptions
 ): void {
   const {
     fontSize,
     letterSpacing,
     wordSpacing,
     currentFont,
-    inkColor,
+    inkColor = "#000000",
     topPadding,
     paperLines,
     paperMargins,
-  } = settings
+    lineColor = "#e5e7eb",
+    lineOpacity = 100,
+    lineWidth = 1,
+    lineSpacing = 24,
+    marginColor = "#ef4444",
+    maxWidth = ctx.canvas.width - (paperMargins ? 80 : 20),
+    startX = paperMargins ? 60 : 10,
+    startY = topPadding,
+    paperWidth = ctx.canvas.width,
+    paperHeight = ctx.canvas.height,
+    handleNewLine,
+  } = options
 
   // Clear canvas
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.clearRect(0, 0, paperWidth, paperHeight)
 
   // Draw paper background
   ctx.fillStyle = "#ffffff"
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.fillRect(0, 0, paperWidth, paperHeight)
 
   // Draw paper lines if enabled
   if (paperLines) {
-    ctx.strokeStyle = "#e5e7eb"
-    ctx.lineWidth = 1
-    const lineSpacing = fontSize * 1.5
-
-    for (let y = topPadding; y < ctx.canvas.height; y += lineSpacing) {
+    ctx.strokeStyle = lineColor
+    ctx.globalAlpha = lineOpacity / 100
+    ctx.lineWidth = lineWidth
+    
+    for (let y = topPadding; y < paperHeight; y += lineSpacing) {
       ctx.beginPath()
       ctx.moveTo(0, y)
-      ctx.lineTo(ctx.canvas.width, y)
+      ctx.lineTo(paperWidth, y)
       ctx.stroke()
     }
+    
+    ctx.globalAlpha = 1
   }
 
   // Draw margins if enabled
   if (paperMargins) {
-    ctx.strokeStyle = "#ef4444"
+    ctx.strokeStyle = marginColor
     ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(40, 0)
-    ctx.lineTo(40, ctx.canvas.height)
+    ctx.lineTo(40, paperHeight)
     ctx.stroke()
   }
 
@@ -127,16 +196,43 @@ export function renderText(
   ctx.textBaseline = "top"
 
   // Measure and render text
-  const { lines, lineHeight } = measureText(ctx, text, settings)
-  let y = topPadding
+  const { lines, lineHeight } = measureText(ctx, text, options)
+  let x = startX
+  let y = startY
 
   lines.forEach((line) => {
-    let x = paperMargins ? 60 : 10
-    const letters = Array.from(line)
+    // Handle new line position
+    if (handleNewLine) {
+      const newPos = handleNewLine(x, y)
+      x = newPos.x
+      y = newPos.y
+    } else {
+      x = startX
+    }
 
+    // Handle empty lines (manual line breaks)
+    if (line === "") {
+      y += lineHeight
+      return
+    }
+
+    const letters = Array.from(line)
     letters.forEach((letter, index) => {
+      // Check if we need to wrap to next line
+      const letterWidth = ctx.measureText(letter).width
+      if (x + letterWidth > maxWidth + startX) {
+        if (handleNewLine) {
+          const newPos = handleNewLine(x, y)
+          x = newPos.x
+          y = newPos.y
+        } else {
+          x = startX
+          y += lineHeight
+        }
+      }
+
       ctx.fillText(letter, x, y)
-      x += ctx.measureText(letter).width + letterSpacing
+      x += letterWidth + letterSpacing
 
       // Add word spacing after spaces
       if (letter === " " && index < letters.length - 1) {
